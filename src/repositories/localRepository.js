@@ -126,6 +126,50 @@ async function actualizarLocalNombre(id, nombre) {
 async function eliminarLocal(id) {
     await db.query('DELETE FROM locales WHERE id = ?', [id]);
 }
+async function getLocalesPorUsuarioId(usuarioId) {
+    const sql = `
+        SELECT 
+            l.id AS local_id,
+            l.nombre AS nombre_local,
+            l.descripcion,
+            l.telefono,
+            l.correo_electronico,
+            l.sitio_web,
+            l.created_at,
+            c.nombre AS categoria,
+            d.calle,
+            d.altura,
+            d.latitud,
+            d.longitud,
+            ciu.nombre AS ciudad,
+            img.url_imagen AS foto_principal
+        FROM locales l
+        LEFT JOIN categorias c ON l.categoria_id = c.id
+        LEFT JOIN direcciones d ON l.direccion_id = d.id
+        LEFT JOIN ciudades ciu ON d.ciudad_id = ciu.id
+        LEFT JOIN imagenes_locales img ON l.id = img.local_id AND img.es_principal = 1
+        WHERE l.usuario_id = ?
+        ORDER BY l.created_at DESC;
+    `;
+
+    const [rows] = await db.query(sql, [usuarioId]);
+    return rows;
+}
+async function getMetricasDueño(usuarioId) {
+    // 1. Contar aprobados (están en la tabla locales)
+    const [aprobadosRes] = await db.query('SELECT COUNT(*) as count FROM locales WHERE usuario_id = ?', [usuarioId]);
+    
+    // 2. Contar pendientes y rechazados (están en solicitudes_locales)
+    const [pendientesRes] = await db.query('SELECT COUNT(*) as count FROM solicitudes_locales WHERE usuario_id = ? AND estado = "pendiente"', [usuarioId]);
+    const [rechazadosRes] = await db.query('SELECT COUNT(*) as count FROM solicitudes_locales WHERE usuario_id = ? AND estado = "rechazado"', [usuarioId]);
+
+    const aprobados = aprobadosRes[0].count;
+    const pendientes = pendientesRes[0].count;
+    const rechazados = rechazadosRes[0].count;
+    const total = aprobados + pendientes + rechazados;
+
+    return { total, aprobados, pendientes, rechazados };
+}
 
 module.exports = {
     getAllLocales,
@@ -136,5 +180,7 @@ module.exports = {
     getLocalesPorCategoria,
     crearLocalDatosDirectos,
     actualizarLocalNombre,
-    eliminarLocal
+    eliminarLocal,
+    getLocalesPorUsuarioId,
+    getMetricasDueño
 };

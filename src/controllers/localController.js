@@ -107,6 +107,26 @@ async function eliminarDato(req, res) {
         res.status(500).json({ error: err.message });
     }
 }
+async function obtenerMisLocales(req, res) {
+    try {
+        const usuarioId = req.user.id; // Extraído directamente del Token JWT
+        const locales = await localRepository.getLocalesPorUsuarioId(usuarioId);
+        res.status(200).json(locales);
+    } catch (error) {
+        console.error('Error al obtener los locales del dueño:', error);
+        res.status(500).json({ message: 'Error al cargar los locales' });
+    }
+}
+async function obtenerMetricasDashboard(req, res) {
+    try {
+        const usuarioId = req.user.id;
+        const metricas = await localRepository.getMetricasDueño(usuarioId);
+        res.status(200).json(metricas);
+    } catch (error) {
+        console.error('Error al obtener métricas del dashboard:', error);
+        res.status(500).json({ message: 'Error al cargar las métricas' });
+    }
+}
 
 module.exports = {
     getCercanos,
@@ -117,5 +137,7 @@ module.exports = {
     getAllDatos,
     crearDato,
     actualizarDato,
-    eliminarDato
+    eliminarDato,
+    obtenerMisLocales,
+    obtenerMetricasDashboard
 };

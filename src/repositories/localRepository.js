@@ -126,6 +126,7 @@ async function actualizarLocalNombre(id, nombre) {
 async function eliminarLocal(id) {
     await db.query('DELETE FROM locales WHERE id = ?', [id]);
 }
+
 async function getLocalesPorUsuarioId(usuarioId) {
     const sql = `
         SELECT 
@@ -155,10 +156,108 @@ async function getLocalesPorUsuarioId(usuarioId) {
     const [rows] = await db.query(sql, [usuarioId]);
     return rows;
 }
+
+async function getLocalesPorUsuarioIdFiltrado(userID, filtro) {
+    if (filtro === 'todos') {
+        const sql = `
+            SELECT 
+                l.id AS local_id,
+                l.nombre AS nombre_local,
+                l.created_at,
+                c.nombre AS categoria,
+                d.calle,
+                d.altura,
+                'Aprobado' AS estado
+            FROM locales l
+            LEFT JOIN categorias c ON l.categoria_id = c.id
+            LEFT JOIN direcciones d ON l.direccion_id = d.id
+            WHERE l.usuario_id = ?
+
+            UNION ALL
+
+            SELECT 
+                sl.id AS local_id,
+                sl.nombre AS nombre_local,
+                sl.created_at,
+                c.nombre AS categoria,
+                sl.calle,
+                sl.altura,
+                sl.estado
+            FROM solicitudes_locales sl
+            LEFT JOIN categorias c ON sl.categoria_id = c.id
+            WHERE sl.usuario_id = ?
+
+            ORDER BY created_at DESC;
+        `;
+
+        const [rows] = await db.query(sql, [userID, userID]);
+        return rows;
+    }
+    switch (filtro) {
+        case 'aprobados': {
+            const sql = `
+                SELECT 
+                    l.id AS local_id,
+                    l.nombre AS nombre_local,
+                    c.nombre AS categoria,
+                    d.calle,
+                    d.altura
+                FROM locales l
+                LEFT JOIN categorias c ON l.categoria_id = c.id
+                LEFT JOIN direcciones d ON l.direccion_id = d.id
+                WHERE l.usuario_id = ?
+                ORDER BY l.created_at DESC;
+            `;
+
+            const [rows] = await db.query(sql, [userID]);
+            return rows;
+        }
+        case 'pendientes': {
+            const sql = `
+                SELECT 
+                    sl.id AS local_id,
+                    sl.nombre AS nombre_local,
+                    sl.estado,
+                    sl.calle,
+                    sl.altura,
+                    c.nombre AS categoria
+                FROM solicitudes_locales sl
+                LEFT JOIN categorias c ON sl.categoria_id = c.id
+                WHERE sl.usuario_id = ? AND sl.estado = "pendiente"
+                ORDER BY sl.created_at DESC;
+            `;
+
+            const [rows] = await db.query(sql, [userID]);
+            return rows;
+        }
+        case 'rechazados': {
+            const sql = `
+                SELECT 
+                    sl.id AS local_id,
+                    sl.nombre AS nombre_local,
+                    sl.estado,
+                    sl.calle,
+                    sl.altura,
+                    c.nombre AS categoria
+                FROM solicitudes_locales sl
+                LEFT JOIN categorias c ON sl.categoria_id = c.id
+                WHERE sl.usuario_id = ? AND sl.estado = "rechazado"
+                ORDER BY sl.created_at DESC;
+            `;
+
+            const [rows] = await db.query(sql, [userID]);
+            return rows;
+        }
+        default:
+            throw new Error('Filtro no válido');
+    }
+
+}
+
 async function getMetricasDueño(usuarioId) {
     // 1. Contar aprobados (están en la tabla locales)
     const [aprobadosRes] = await db.query('SELECT COUNT(*) as count FROM locales WHERE usuario_id = ?', [usuarioId]);
-    
+
     // 2. Contar pendientes y rechazados (están en solicitudes_locales)
     const [pendientesRes] = await db.query('SELECT COUNT(*) as count FROM solicitudes_locales WHERE usuario_id = ? AND estado = "pendiente"', [usuarioId]);
     const [rechazadosRes] = await db.query('SELECT COUNT(*) as count FROM solicitudes_locales WHERE usuario_id = ? AND estado = "rechazado"', [usuarioId]);
@@ -182,5 +281,6 @@ module.exports = {
     actualizarLocalNombre,
     eliminarLocal,
     getLocalesPorUsuarioId,
+    getLocalesPorUsuarioIdFiltrado,
     getMetricasDueño
 };

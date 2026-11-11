@@ -128,6 +128,17 @@ async function obtenerMisLocalesFiltrados(req, res) {
         res.status(500).json({ message: 'Error al cargar los locales' });
     }
 }
+async function obtenerMisLocalesBuscados(req, res) {
+    try {
+        const { userID } = req.params;
+        const { busqueda } = req.params;
+        const locales = await localRepository.getLocalesPorUsuarioBuscado(userID, busqueda);
+        res.status(200).json(locales);
+    } catch (error) {
+        console.error('Error al obtener los locales buscados:', error);
+        res.status(500).json({ message: 'Error al cargar los locales' });
+    }
+}
 async function obtenerMetricasDashboard(req, res) {
     try {
         const usuarioId = req.user.id;
@@ -151,5 +162,6 @@ module.exports = {
     eliminarDato,
     obtenerMisLocales,
     obtenerMisLocalesFiltrados,
+    obtenerMisLocalesBuscados,
     obtenerMetricasDashboard
 };

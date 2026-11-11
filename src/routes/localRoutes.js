@@ -8,6 +8,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 //usuario-dueño para que filtre todos sus locales disponibles
 router.get('/mis-locales', verifyJWT, localController.obtenerMisLocales);
 router.get('/mis-locales/filtrados/:userID/:filtro', localController.obtenerMisLocalesFiltrados);
+router.get('/mis-locales/busqueda/:userID/:busqueda', localController.obtenerMisLocalesBuscados);
 router.get('/cercanos', localController.getCercanos);
 router.get('/metricas', verifyJWT, localController.obtenerMetricasDashboard);
 router.get('/buscar', localController.buscarLocales);

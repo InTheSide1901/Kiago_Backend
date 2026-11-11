@@ -199,9 +199,11 @@ async function getLocalesPorUsuarioIdFiltrado(userID, filtro) {
                 SELECT 
                     l.id AS local_id,
                     l.nombre AS nombre_local,
+                    l.created_at,
                     c.nombre AS categoria,
                     d.calle,
-                    d.altura
+                    d.altura,
+                    'Aprobado' AS estado
                 FROM locales l
                 LEFT JOIN categorias c ON l.categoria_id = c.id
                 LEFT JOIN direcciones d ON l.direccion_id = d.id
@@ -217,6 +219,7 @@ async function getLocalesPorUsuarioIdFiltrado(userID, filtro) {
                 SELECT 
                     sl.id AS local_id,
                     sl.nombre AS nombre_local,
+                    sl.created_at,
                     sl.estado,
                     sl.calle,
                     sl.altura,
@@ -235,6 +238,7 @@ async function getLocalesPorUsuarioIdFiltrado(userID, filtro) {
                 SELECT 
                     sl.id AS local_id,
                     sl.nombre AS nombre_local,
+                    sl.created_at,
                     sl.estado,
                     sl.calle,
                     sl.altura,
@@ -252,6 +256,63 @@ async function getLocalesPorUsuarioIdFiltrado(userID, filtro) {
             throw new Error('Filtro no válido');
     }
 
+}
+
+async function getLocalesPorUsuarioBuscado(usuarioId, busqueda) {
+const sql = `
+        SELECT *
+        FROM (
+            SELECT 
+                l.id AS local_id,
+                l.nombre AS nombre_local,
+                l.created_at,
+                c.nombre AS categoria,
+                d.calle,
+                d.altura,
+                'Aprobado' AS estado
+            FROM locales l
+            LEFT JOIN categorias c ON l.categoria_id = c.id
+            LEFT JOIN direcciones d ON l.direccion_id = d.id
+            WHERE l.usuario_id = ?
+
+            UNION ALL
+
+            SELECT 
+                sl.id AS local_id,
+                sl.nombre AS nombre_local,
+                sl.created_at,
+                c.nombre AS categoria,
+                sl.calle,
+                sl.altura,
+                sl.estado
+            FROM solicitudes_locales sl
+            LEFT JOIN categorias c ON sl.categoria_id = c.id
+            WHERE sl.usuario_id = ?
+        ) AS lugares
+        WHERE
+            (
+                ? = ''
+                OR nombre_local LIKE ?
+                OR categoria LIKE ?
+                OR calle LIKE ?
+                OR CAST(altura AS CHAR) LIKE ?
+            )
+        ORDER BY created_at DESC;
+    `;
+
+    const termino = `%${busqueda}%`;
+
+    const [rows] = await db.query(sql, [
+        usuarioId,
+        usuarioId,
+        busqueda,
+        termino,
+        termino,
+        termino,
+        termino
+    ]);
+
+    return rows;
 }
 
 async function getMetricasDueño(usuarioId) {
@@ -282,5 +343,6 @@ module.exports = {
     eliminarLocal,
     getLocalesPorUsuarioId,
     getLocalesPorUsuarioIdFiltrado,
+    getLocalesPorUsuarioBuscado,
     getMetricasDueño
 };

@@ -43,7 +43,13 @@ async function login(req, res) {
 }
 
 async function me(req, res) {
-    return res.json({ usuario: req.user });
+    try {
+        // Consultamos directamente la BD con el ID del token para traer nombre, apellido, email, teléfono, etc.
+        const usuario = await authService.obtenerPerfil(req.user.id);
+        return res.json({ usuario });
+    } catch (error) {
+        return res.status(404).json({ error: 'Usuario no encontrado en la base de datos.' });
+    }
 }
 
 async function obtenerUsuarioPorId(req, res) {
@@ -60,9 +66,29 @@ async function obtenerUsuarioPorId(req, res) {
     }
 }
 
+async function actualizarDatos(req, res) {
+    try {
+        const resultado = await authService.actualizarPerfil(req.usuario.id, req.body);
+        return res.json(resultado);
+    } catch (error) {
+        return res.status(400).json({ error: error.message });
+    }
+}
+
+async function cambiarPassword(req, res) {
+    try {
+        const resultado = await authService.cambiarPassword(req.usuario.id, req.body);
+        return res.json(resultado);
+    } catch (error) {
+        return res.status(400).json({ error: error.message });
+    }
+}
+
 module.exports = {
     register,
     login,
     me,
-    obtenerUsuarioPorId
+    obtenerUsuarioPorId,
+    actualizarDatos,
+    cambiarPassword
 };

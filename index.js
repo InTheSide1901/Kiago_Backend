@@ -12,6 +12,7 @@ const comentarioRoutes = require('./src/routes/comentarioRoutes');
 const favoritoRoutes = require('./src/routes/favoritoRoutes');
 const solicitudRoutes = require('./src/routes/solicitudRoutes');
 const otherRoutes = require('./src/routes/otherRoutes');
+const planRoutes = require('./src/routes/planRoutes');
 
 const app = express();
 
@@ -22,9 +23,11 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/locales', localRoutes);
 app.use('/api/comentarios', comentarioRoutes);
+app.use('/api/planes', planRoutes);
 app.use('/api', favoritoRoutes);
 app.use('/api', solicitudRoutes);
 app.use('/api', otherRoutes);
+
 
 // Puerto de ejecución
 app.listen(3000, () => {

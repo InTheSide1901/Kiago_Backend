@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authRepository = require('../repositories/authRepository');
 const { JWT_SECRET } = require('../config/s3');
+const { authRepoDuenio, findUserById } = require('../repositories/authRepository');
 
 async function registrarUsuario(data) {
     const { nombre, apellido, email, password, telefono, rol_id } = data;
@@ -74,8 +75,37 @@ async function obtenerPerfil(userId) {
     return usuario;
 }
 
+async function actualizarPerfil(id, datos) {
+    const actualizado = await authRepoDuenio.actualizarDatosPersonales(id, datos);
+    if (!actualizado) {
+        throw new Error('No se pudo actualizar el perfil o el usuario no es dueño.');
+    }
+    return { mensaje: 'Datos personales actualizados correctamente.' };
+}
+
+async function cambiarPassword(id, { passActual, passNueva }) {
+    const usuario = await authRepoDuenio.obtenerPorId(id); // Valida rol_id = 2
+    if (!usuario) {
+        throw new Error('Usuario no encontrado o no autorizado.');
+    }
+
+    const passwordValida = await bcrypt.compare(passActual, usuario.password_hash);
+    if (!passwordValida) {
+        throw new Error('La contraseña actual es incorrecta.');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const nuevoHash = await bcrypt.hash(passNueva, salt);
+
+    await authRepoDuenio.actualizarPassword(id, nuevoHash);
+    return { mensaje: 'Contraseña actualizada correctamente.' };
+}
+
 module.exports = {
     registrarUsuario,
     loginUsuario,
-    obtenerPerfil
+    obtenerPerfil,
+    actualizarPerfil,
+    cambiarPassword,
+    authRepoDuenio
 };

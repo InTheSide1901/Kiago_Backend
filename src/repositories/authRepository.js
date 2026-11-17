@@ -14,6 +14,15 @@ async function findUserById(id) {
     return rows[0];
 }
 
+async function updateUserProfile(id, nombre, apellido, telefono, fotoPerfilUrl) {
+    await db.query(`
+        UPDATE usuarios
+        SET nombre = ?, apellido = ?, telefono = ?,
+            foto_perfil = COALESCE(?, foto_perfil)
+        WHERE id = ?
+    `, [nombre, apellido, telefono, fotoPerfilUrl, id]);
+}
+
 async function createUser(rolId, nombre, apellido, email, passwordHash, telefono) {
     const [result] = await db.query(
         'INSERT INTO usuarios (rol_id, nombre, apellido, email, password_hash, telefono, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
@@ -25,5 +34,6 @@ async function createUser(rolId, nombre, apellido, email, passwordHash, telefono
 module.exports = {
     findUserByEmail,
     findUserById,
+    updateUserProfile,
     createUser
 };

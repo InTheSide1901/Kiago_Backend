@@ -12,11 +12,12 @@ const comentarioRoutes = require('./src/routes/comentarioRoutes');
 const favoritoRoutes = require('./src/routes/favoritoRoutes');
 const solicitudRoutes = require('./src/routes/solicitudRoutes');
 const otherRoutes = require('./src/routes/otherRoutes');
+const agendaRoutes = require('./src/routes/agendaRoutes')
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '8mb' }));
 
 // Registro de endpoints
 app.use('/api/auth', authRoutes);
@@ -25,6 +26,7 @@ app.use('/api/comentarios', comentarioRoutes);
 app.use('/api', favoritoRoutes);
 app.use('/api', solicitudRoutes);
 app.use('/api', otherRoutes);
+app.use('/api/agenda', agendaRoutes);
 
 // Puerto de ejecución
 app.listen(3000, () => {

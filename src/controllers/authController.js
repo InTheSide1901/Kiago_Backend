@@ -43,7 +43,41 @@ async function login(req, res) {
 }
 
 async function me(req, res) {
-    return res.json({ usuario: req.user });
+    try {
+        const usuario = await authService.obtenerPerfil(req.user.id);
+        return res.json({ usuario });
+    } catch (error) {
+        console.error('Error al consultar perfil:', error.name || 'Error', error.message || 'Error interno');
+        return res.status(500).json({ mensaje: 'No se pudo cargar el perfil' });
+    }
+}
+
+async function actualizarMiPerfil(req, res) {
+    try {
+        const usuario = await authService.actualizarPerfil(req.user.id, req.body || {});
+        return res.status(200).json({
+            mensaje: 'Perfil actualizado correctamente',
+            usuario
+        });
+    } catch (error) {
+        if (error.code === 'PERFIL_INVALIDO') {
+            return res.status(400).json({ mensaje: error.message });
+        }
+        if (error.code === 'USUARIO_NO_ENCONTRADO') {
+            return res.status(404).json({ mensaje: error.message });
+        }
+
+        if (error.name === 'ExpiredToken' || error.Code === 'ExpiredToken') {
+            console.error('Error al actualizar perfil: las credenciales temporales de S3 expiraron.');
+            return res.status(503).json({
+                mensaje: 'La sesión temporal de almacenamiento de imágenes expiró. Renueva las credenciales de AWS y reinicia el backend.'
+            });
+        }
+
+        // No imprimir el objeto completo: errores de AWS pueden incluir tokens y otros datos sensibles.
+        console.error('Error al actualizar perfil:', error.name || 'Error', error.message || 'Error interno');
+        return res.status(500).json({ mensaje: 'No se pudo actualizar el perfil' });
+    }
 }
 
 async function obtenerUsuarioPorId(req, res) {
@@ -64,5 +98,6 @@ module.exports = {
     register,
     login,
     me,
+    actualizarMiPerfil,
     obtenerUsuarioPorId
 };

@@ -13,7 +13,12 @@ async function registrarUsuario(data) {
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
-    const idRol = rol_id || 3; // Rol por defecto: 3 (Turista)
+    //const idRol = rol_id || 3; // Rol por defecto: 3 (Turista)
+
+    // Roles : 1(admin) 2(dueño) 3(turista) cualquier otro valor se considera turista.
+    const rolesValidos = [1, 2, 3];
+    const idRol = rolesValidos.includes(Number(rol_id)) ? Number(rol_id) : 3;
+    //.............................................
 
     const insertId = await authRepository.createUser(idRol, nombre, apellido, email, passwordHash, telefono);
 
